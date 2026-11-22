@@ -1,0 +1,63 @@
+name: Build Line of Fire APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Godot 4.3
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-mono: false
+          include-export-templates: true
+
+      - name: Create Android export presets
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates
+          cat << 'EOF' > export_presets.cfg
+          [preset.0]
+          name="Android"
+          platform="Android"
+          runnable=true
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path="build/LineOfFire.apk"
+          encryption_include_filters=""
+          encryption_exclude_filters=""
+          encrypt_pck=false
+          encrypt_directory=false
+
+          [preset.0.options]
+          custom_template/release=""
+          custom_template/debug=""
+          architectures/arm64-v8a=true
+          architectures/armeabi-v7a=false
+          package/unique_name="com.abosuleiman.lineoffire"
+          package/name="Line of Fire"
+          version/code=1
+          version/name="0.1.0"
+          screen/orientation=0
+          xr_features/xr_mode=0
+          permissions/internet=false
+          EOF
+
+      - name: Create build directory
+        run: mkdir -p build
+
+      - name: Export Android APK
+        run: godot --headless --export-debug "Android" build/LineOfFire.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Line-of-Fire-APK
+          path: build/LineOfFire.apk
