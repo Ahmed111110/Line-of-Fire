@@ -50,15 +50,25 @@ jobs:
           name="Pack"
           platform="Linux/X11"
           runnable=true
+          dedicated_server=false
+          custom_features=""
           export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
           export_path="build/main.pck"
+
+          [preset.0.options]
+          custom_template/release=""
+          custom_template/debug=""
           EOF
 
           godot --headless --export-pack "Pack" build/main.pck
           ls -lh build/main.pck
-          cp build/main.pck pkg_tmp/assets/main.pck
 
           cp ~/.local/share/godot/export_templates/4.3.stable/android_debug.apk build/unsigned.apk
+          unzip -l build/unsigned.apk | head -n 35
+
+          cp build/main.pck pkg_tmp/assets/main.pck
           (cd pkg_tmp && zip -0 -ur ../build/unsigned.apk assets/main.pck)
 
           BUILD_TOOLS_DIR=$(find ~/android-sdk/build-tools -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)
