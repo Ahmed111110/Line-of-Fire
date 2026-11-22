@@ -86,7 +86,7 @@ func _on_crouch_pressed() -> void:
 
 func _input(event: InputEvent) -> void:
 	var vp_size := get_viewport().get_visible_rect().size
-	var mid_x := vp_size.x * 0.45
+	var mid_x: float = vp_size.x * 0.45
 
 	if event is InputEventScreenTouch:
 		if event.pressed:
@@ -110,8 +110,8 @@ func _input(event: InputEvent) -> void:
 			head.rotate_x(-event.relative.y * touch_look_sensitivity)
 			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-80), deg_to_rad(80))
 		elif event.index == move_drag_index:
-			var diff := event.position - move_origin
-			var limited := diff.limit_length(60.0)
+			var diff: Vector2 = event.position - move_origin
+			var limited: Vector2 = diff.limit_length(60.0)
 			move_vector = limited / 60.0
 			if joy_knob:
 				joy_knob.position = Vector2(60, 60) + limited
@@ -121,11 +121,11 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 
 	if head != null:
-		var target_h := 1.1 if is_crouching else 1.7
+		var target_h: float = 1.1 if is_crouching else 1.7
 		head.position.y = lerp(head.position.y, target_h, 12.0 * delta)
 
-	var spd := crouch_speed if is_crouching else walk_speed
-	var dir_3d := (transform.basis * Vector3(move_vector.x, 0.0, move_vector.y)).normalized()
+	var spd: float = crouch_speed if is_crouching else walk_speed
+	var dir_3d: Vector3 = (transform.basis * Vector3(move_vector.x, 0.0, move_vector.y)).normalized()
 
 	if dir_3d.length() > 0.01:
 		velocity.x = dir_3d.x * spd
