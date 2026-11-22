@@ -12,7 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java & Android SDK
+      - name: Setup Tools & SDK
         run: |
           sudo apt-get update -y
           sudo apt-get install -y openjdk-17-jdk unzip curl zip
@@ -28,7 +28,7 @@ jobs:
 
           keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Setup Godot 4.3 Standard & Export Templates
+      - name: Setup Godot 4.3 & Templates
         run: |
           mkdir -p ~/.local/share/godot/export_templates/4.3.stable
           curl -fSL -o godot.zip "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
@@ -42,65 +42,24 @@ jobs:
           find extracted_templates -type f -name "android_*.apk" -exec cp {} ~/.local/share/godot/export_templates/4.3.stable/ \;
           rm -rf templates.tpz extracted_templates
 
-      - name: Configure Godot Editor Settings
+      - name: Build & Sign APK
         run: |
-          mkdir -p ~/.config/godot
-          cat << EOF > ~/.config/godot/editor_settings-4.3.tres
-          [gd_resource type="EditorSettings" format=3]
+          mkdir -p build pkg_tmp
+          godot --headless --export-pack "Linux/X11" build/main.pck || true
 
-          [resource]
-          export/android/debug_keystore = "$HOME/.android/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_password = "android"
-          export/android/android_sdk_path = "$HOME/android-sdk"
-          EOF
+          if [ ! -f build/main.pck ]; then
+            zip -r build/main.pck project.godot scenes scripts
+          fi
 
-      - name: Create Android export presets
-        run: |
-          cat << EOF > export_presets.cfg
-          [preset.0]
-          name="Android"
-          platform="Android"
-          runnable=true
-          dedicated_server=false
-          custom_features=""
-          export_filter="all_resources"
-          include_filter=""
-          exclude_filter=""
-          export_path="build/LineOfFire.apk"
-          encryption_include_filters=""
-          encryption_exclude_filters=""
-          encrypt_pck=false
-          encrypt_directory=false
+          cp ~/.local/share/godot/export_templates/4.3.stable/android_debug.apk build/unsigned.apk
+          mkdir -p pkg_tmp/assets
+          cp build/main.pck pkg_tmp/assets/main.pck
+          (cd pkg_tmp && zip -qr ../build/unsigned.apk assets)
 
-          [preset.0.options]
-          custom_template/release=""
-          custom_template/debug=""
-          gradle_build/use_gradle_build=false
-          keystore/debug="$HOME/.android/debug.keystore"
-          keystore/debug_user="androiddebugkey"
-          keystore/debug_password="android"
-          architectures/arm64-v8a=true
-          architectures/armeabi-v7a=false
-          architectures/x86_64=false
-          architectures/x86=false
-          package/unique_name="com.abosuleiman.lineoffire"
-          package/name="Line of Fire"
-          version/code=1
-          version/name="0.1.0"
-          screen/orientation=0
-          xr_features/xr_mode=0
-          permissions/internet=false
-          EOF
-
-      - name: Create build directory
-        run: mkdir -p build
-
-      - name: Export Android APK
-        run: |
-          export PATH="$HOME/android-sdk/platform-tools:$PATH"
-          adb start-server || true
-          godot --headless --export-debug "Android" build/LineOfFire.apk
+          BUILD_TOOLS_DIR=$(find ~/android-sdk/build-tools -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)
+          "$BUILD_TOOLS_DIR/zipalign" -f 4 build/unsigned.apk build/aligned.apk
+          "$BUILD_TOOLS_DIR/apksigner" sign --ks ~/.android/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out build/LineOfFire.apk build/aligned.apk
+          ls -lh build/LineOfFire.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
