@@ -44,17 +44,22 @@ jobs:
 
       - name: Build & Sign APK
         run: |
-          mkdir -p build pkg_tmp
-          godot --headless --export-pack "Linux/X11" build/main.pck || true
+          mkdir -p build pkg_tmp/assets
+          cat << 'EOF' > export_presets.cfg
+          [preset.0]
+          name="Pack"
+          platform="Linux/X11"
+          runnable=true
+          export_filter="all_resources"
+          export_path="build/main.pck"
+          EOF
 
-          if [ ! -f build/main.pck ]; then
-            zip -r build/main.pck project.godot scenes scripts
-          fi
+          godot --headless --export-pack "Pack" build/main.pck
+          ls -lh build/main.pck
+          cp build/main.pck pkg_tmp/assets/main.pck
 
           cp ~/.local/share/godot/export_templates/4.3.stable/android_debug.apk build/unsigned.apk
-          mkdir -p pkg_tmp/assets
-          cp build/main.pck pkg_tmp/assets/main.pck
-          (cd pkg_tmp && zip -qr ../build/unsigned.apk assets)
+          (cd pkg_tmp && zip -0 -ur ../build/unsigned.apk assets/main.pck)
 
           BUILD_TOOLS_DIR=$(find ~/android-sdk/build-tools -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)
           "$BUILD_TOOLS_DIR/zipalign" -f 4 build/unsigned.apk build/aligned.apk
