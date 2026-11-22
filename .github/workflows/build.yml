@@ -12,6 +12,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Java & Android SDK
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y openjdk-17-jdk unzip curl
+
+          mkdir -p ~/android-sdk/cmdline-tools ~/.android
+          curl -fSL -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+          unzip -q cmdline-tools.zip -d ~/android-sdk/cmdline-tools
+          mv ~/android-sdk/cmdline-tools/cmdline-tools ~/android-sdk/cmdline-tools/latest
+          rm -f cmdline-tools.zip
+
+          yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --licenses
+          ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "build-tools;34.0.0"
+
+          keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
       - name: Setup Godot 4.3 Standard & Export Templates
         run: |
           mkdir -p ~/.local/share/godot/export_templates/4.3.stable
@@ -25,12 +41,6 @@ jobs:
           unzip -q templates.tpz -d extracted_templates
           find extracted_templates -type f -name "android_*.apk" -exec cp {} ~/.local/share/godot/export_templates/4.3.stable/ \;
           rm -rf templates.tpz extracted_templates
-          ls -lh ~/.local/share/godot/export_templates/4.3.stable/
-
-      - name: Setup Android SDK & Debug Keystore
-        run: |
-          mkdir -p ~/android-sdk/platform-tools ~/.android
-          keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Configure Godot Editor Settings
         run: |
