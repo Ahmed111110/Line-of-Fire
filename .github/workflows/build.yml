@@ -14,10 +14,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Keystore & Export Presets
+      - name: Setup Keystore, Templates & Export Presets
         run: |
-          mkdir -p ~/.android ~/.config/godot build
+          mkdir -p ~/.android ~/.config/godot ~/.local/share/godot/export_templates/4.3.stable build
           keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+          find / -name "android_debug.apk" -o -name "android_release.apk" 2>/dev/null | xargs -I{} cp {} ~/.local/share/godot/export_templates/4.3.stable/ || true
+
+          if [ ! -f ~/.local/share/godot/export_templates/4.3.stable/android_debug.apk ]; then
+            curl -fSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
+            unzip -q templates.tpz -d extracted_templates
+            find extracted_templates -type f -name "android_*.apk" -exec cp {} ~/.local/share/godot/export_templates/4.3.stable/ \;
+            rm -rf templates.tpz extracted_templates
+          fi
+
+          JAVA_HOME_DIR=$(dirname $(dirname $(readlink -f $(which javac))))
 
           cat << EOF > ~/.config/godot/editor_settings-4.3.tres
           [gd_resource type="EditorSettings" format=3]
@@ -27,6 +38,7 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_password = "android"
           export/android/android_sdk_path = "/usr/lib/android-sdk"
+          export/android/java_sdk_path = "$JAVA_HOME_DIR"
           EOF
 
           cat << EOF > export_presets.cfg
