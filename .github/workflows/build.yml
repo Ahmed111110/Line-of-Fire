@@ -8,73 +8,66 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Tools & SDK
+      - name: Setup Keystore & Export Presets
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y openjdk-17-jdk unzip curl zip
-
-          mkdir -p ~/android-sdk/cmdline-tools ~/.android
-          curl -fSL -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
-          unzip -q cmdline-tools.zip -d ~/android-sdk/cmdline-tools
-          mv ~/android-sdk/cmdline-tools/cmdline-tools ~/android-sdk/cmdline-tools/latest
-          rm -f cmdline-tools.zip
-
-          yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --licenses
-          ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "build-tools;34.0.0"
-
+          mkdir -p ~/.android ~/.config/godot build
           keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Setup Godot 4.3 & Templates
-        run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
-          curl -fSL -o godot.zip "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
-          unzip -q godot.zip
-          mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
-          chmod +x /usr/local/bin/godot
-          rm -f godot.zip
+          cat << EOF > ~/.config/godot/editor_settings-4.3.tres
+          [gd_resource type="EditorSettings" format=3]
 
-          curl -fSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
-          unzip -q templates.tpz -d extracted_templates
-          find extracted_templates -type f -name "android_*.apk" -exec cp {} ~/.local/share/godot/export_templates/4.3.stable/ \;
-          rm -rf templates.tpz extracted_templates
+          [resource]
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_password = "android"
+          export/android/android_sdk_path = "/usr/lib/android-sdk"
+          EOF
 
-      - name: Build & Sign APK
-        run: |
-          mkdir -p build pkg_tmp/assets
-          cat << 'EOF' > export_presets.cfg
+          cat << EOF > export_presets.cfg
           [preset.0]
-          name="Pack"
-          platform="Linux/X11"
+          name="Android"
+          platform="Android"
           runnable=true
           dedicated_server=false
           custom_features=""
           export_filter="all_resources"
           include_filter=""
           exclude_filter=""
-          export_path="build/main.pck"
+          export_path="build/LineOfFire.apk"
+          encryption_include_filters=""
+          encryption_exclude_filters=""
+          encrypt_pck=false
+          encrypt_directory=false
 
           [preset.0.options]
           custom_template/release=""
           custom_template/debug=""
+          gradle_build/use_gradle_build=false
+          keystore/debug="$HOME/.android/debug.keystore"
+          keystore/debug_user="androiddebugkey"
+          keystore/debug_password="android"
+          architectures/arm64-v8a=true
+          architectures/armeabi-v7a=false
+          architectures/x86_64=false
+          architectures/x86=false
+          package/unique_name="com.abosuleiman.lineoffire"
+          package/name="Line of Fire"
+          version/code=1
+          version/name="0.1.0"
+          screen/orientation=0
+          xr_features/xr_mode=0
+          permissions/internet=false
           EOF
 
-          godot --headless --export-pack "Pack" build/main.pck
-          ls -lh build/main.pck
-
-          cp ~/.local/share/godot/export_templates/4.3.stable/android_debug.apk build/unsigned.apk
-          unzip -l build/unsigned.apk | head -n 35
-
-          cp build/main.pck pkg_tmp/assets/main.pck
-          (cd pkg_tmp && zip -0 -ur ../build/unsigned.apk assets/main.pck)
-
-          BUILD_TOOLS_DIR=$(find ~/android-sdk/build-tools -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)
-          "$BUILD_TOOLS_DIR/zipalign" -f 4 build/unsigned.apk build/aligned.apk
-          "$BUILD_TOOLS_DIR/apksigner" sign --ks ~/.android/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out build/LineOfFire.apk build/aligned.apk
-          ls -lh build/LineOfFire.apk
+      - name: Export Android APK
+        run: |
+          godot --headless --export-debug "Android" build/LineOfFire.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
