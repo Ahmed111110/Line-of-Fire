@@ -12,24 +12,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Godot 4.3
-        uses: chickensoft-games/setup-godot@v2
-        with:
-          version: 4.3.0
-          use-mono: false
-          include-export-templates: false
-
-      - name: Install Godot 4.3.0 Export Templates
+      - name: Setup Godot 4.3 Standard
         run: |
           mkdir -p ~/.local/share/godot/export_templates/4.3.stable
-          mkdir -p ~/.local/share/godot/export_templates/4.3.stable.mono
+          curl -fSL -o godot.zip "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+          rm -f godot.zip
+
           curl -fSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
           unzip -q templates.tpz -d extracted_templates
-          cp -r extracted_templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
-          cp -r extracted_templates/templates/* ~/.local/share/godot/export_templates/4.3.stable.mono/
+          mv extracted_templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
           rm -rf templates.tpz extracted_templates
-          ls -la ~/.local/share/godot/export_templates/4.3.stable/
-          ls -la ~/.local/share/godot/export_templates/4.3.stable.mono/
 
       - name: Create Android export presets
         run: |
