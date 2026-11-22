@@ -61,19 +61,14 @@ func _build_hud() -> void:
 	btn_jump.text = "JUMP"
 	btn_jump.position = Vector2(1060, 500)
 	btn_jump.size = Vector2(160, 80)
-	btn_jump.pressed.connect(func():
-		if is_on_floor():
-			velocity.y = jump_velocity
-	)
+	btn_jump.pressed.connect(_on_jump_pressed)
 	layer.add_child(btn_jump)
 
 	var btn_crouch := Button.new()
 	btn_crouch.text = "CROUCH"
 	btn_crouch.position = Vector2(1060, 400)
 	btn_crouch.size = Vector2(160, 80)
-	btn_crouch.pressed.connect(func():
-		is_crouching = not is_crouching
-	)
+	btn_crouch.pressed.connect(_on_crouch_pressed)
 	layer.add_child(btn_crouch)
 
 	var dot := ColorRect.new()
@@ -81,6 +76,13 @@ func _build_hud() -> void:
 	dot.size = Vector2(8, 8)
 	dot.position = Vector2(636, 356)
 	layer.add_child(dot)
+
+func _on_jump_pressed() -> void:
+	if is_on_floor():
+		velocity.y = jump_velocity
+
+func _on_crouch_pressed() -> void:
+	is_crouching = not is_crouching
 
 func _input(event: InputEvent) -> void:
 	var vp_size := get_viewport().get_visible_rect().size
