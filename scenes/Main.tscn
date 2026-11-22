@@ -1,17 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://main_line_of_fire"]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/khan_yunis_castle_generator.gd" id="1_map"]
-[ext_resource type="Script" path="res://scripts/player_fps.gd" id="2_player"]
 
 [node name="Main" type="Node3D"]
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 25, 0)
-shadow_enabled = true
-
-[node name="KhanYunisMap" type="Node3D" parent="."]
 script = ExtResource("1_map")
-
-[node name="Player" type="CharacterBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 12)
-script = ExtResource("2_player")
