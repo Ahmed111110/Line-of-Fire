@@ -55,17 +55,26 @@ func _setup_ui() -> void:
 	btn_forward.text = "FORWARD"
 	btn_forward.position = Vector2(1040, 430)
 	btn_forward.size = Vector2(180, 70)
-	btn_forward.button_down.connect(func(): move_dir.y = -1.0)
-	btn_forward.button_up.connect(func(): move_dir.y = 0.0)
+	btn_forward.button_down.connect(_on_fwd_down)
+	btn_forward.button_up.connect(_on_move_up)
 	hud.add_child(btn_forward)
 
 	var btn_back := Button.new()
 	btn_back.text = "BACK"
 	btn_back.position = Vector2(1040, 520)
 	btn_back.size = Vector2(180, 70)
-	btn_back.button_down.connect(func(): move_dir.y = 1.0)
-	btn_back.button_up.connect(func(): move_dir.y = 0.0)
+	btn_back.button_down.connect(_on_back_down)
+	btn_back.button_up.connect(_on_move_up)
 	hud.add_child(btn_back)
+
+func _on_fwd_down() -> void:
+	move_dir.y = -1.0
+
+func _on_back_down() -> void:
+	move_dir.y = 1.0
+
+func _on_move_up() -> void:
+	move_dir.y = 0.0
 
 func _setup_env() -> void:
 	var we := WorldEnvironment.new()
@@ -108,22 +117,18 @@ func _make_box(b_name: String, b_size: Vector3, b_pos: Vector3, b_color: Color) 
 	add_child(mi)
 
 func _build_castle_and_city() -> void:
-	# أرضية وسط خانيونس
 	_make_box("Ground", Vector3(260.0, 1.0, 260.0), Vector3(0.0, -0.5, 0.0), Color(0.76, 0.65, 0.45))
-	# شارع رئيسي
 	_make_box("MainRoad", Vector3(12.0, 0.08, 180.0), Vector3(0.0, 0.04, 0.0), Color(0.20, 0.20, 0.22))
-	# قلعة خانيونس وأبراجها أمام الكاميرا
 	_make_box("CastleMain", Vector3(32.0, 10.0, 24.0), Vector3(0.0, 5.0, -28.0), Color(0.86, 0.70, 0.42))
 	_make_box("CastleTowerL", Vector3(8.0, 15.0, 8.0), Vector3(-18.0, 7.5, -18.0), Color(0.75, 0.56, 0.32))
 	_make_box("CastleTowerR", Vector3(8.0, 15.0, 8.0), Vector3(18.0, 7.5, -18.0), Color(0.75, 0.56, 0.32))
-	# مبانٍ جانبية
 	_make_box("BldgL1", Vector3(16.0, 9.0, 14.0), Vector3(-20.0, 4.5, 2.0), Color(0.55, 0.56, 0.60))
 	_make_box("BldgR1", Vector3(16.0, 10.0, 14.0), Vector3(20.0, 5.0, 2.0), Color(0.62, 0.58, 0.50))
 
 func _input(event: InputEvent) -> void:
 	if cam == null:
 		return
-	var w := get_viewport().get_visible_rect().size.x
+	var w: float = get_viewport().get_visible_rect().size.x
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if event.position.x < w * 0.4 and joy_id == -1:
@@ -144,7 +149,7 @@ func _input(event: InputEvent) -> void:
 			pitch = clamp(pitch - event.relative.y * 0.005, deg_to_rad(-80), deg_to_rad(80))
 			cam.rotation = Vector3(pitch, yaw, 0.0)
 		elif event.index == joy_id:
-			var rel := (event.position - joy_center).limit_length(55.0)
+			var rel: Vector2 = (event.position - joy_center).limit_length(55.0)
 			move_dir = rel / 55.0
 			if knob != null:
 				knob.position = Vector2(55, 55) + rel
@@ -153,10 +158,10 @@ func _process(delta: float) -> void:
 	if cam == null:
 		return
 	if move_dir.length() > 0.05:
-		var fwd := -cam.global_transform.basis.z
+		var fwd: Vector3 = -cam.global_transform.basis.z
 		fwd.y = 0.0
 		fwd = fwd.normalized()
-		var right := cam.global_transform.basis.x
+		var right: Vector3 = cam.global_transform.basis.x
 		right.y = 0.0
 		right = right.normalized()
 		cam.position += (right * move_dir.x - fwd * move_dir.y) * 8.0 * delta
