@@ -19,13 +19,17 @@ jobs:
           use-mono: false
           include-export-templates: false
 
-      - name: Install Godot 4.3.0 Android Export Templates
+      - name: Install Godot 4.3.0 Export Templates
         run: |
           mkdir -p ~/.local/share/godot/export_templates/4.3.stable
-          curl -L -o templates.tpz "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable.mono
+          curl -fSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
           unzip -q templates.tpz -d extracted_templates
-          mv extracted_templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+          cp -r extracted_templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+          cp -r extracted_templates/templates/* ~/.local/share/godot/export_templates/4.3.stable.mono/
           rm -rf templates.tpz extracted_templates
+          ls -la ~/.local/share/godot/export_templates/4.3.stable/
+          ls -la ~/.local/share/godot/export_templates/4.3.stable.mono/
 
       - name: Create Android export presets
         run: |
