@@ -15,7 +15,7 @@ jobs:
       - name: Setup Java & Android SDK
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y openjdk-17-jdk unzip curl
+          sudo apt-get install -y openjdk-17-jdk unzip curl zip
 
           mkdir -p ~/android-sdk/cmdline-tools ~/.android
           curl -fSL -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
@@ -97,7 +97,10 @@ jobs:
         run: mkdir -p build
 
       - name: Export Android APK
-        run: godot --headless --export-debug "Android" build/LineOfFire.apk
+        run: |
+          export PATH="$HOME/android-sdk/platform-tools:$PATH"
+          adb start-server || true
+          godot --headless --export-debug "Android" build/LineOfFire.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
